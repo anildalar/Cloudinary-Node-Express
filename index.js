@@ -3,7 +3,7 @@ const app = express();
 const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
-const cloudinary = require('cloudinary');
+const cloudinary = require('cloudinary').v2;
 const { uuid } = require('uuidv4');
 
 let env = require('dotenv');
@@ -11,7 +11,7 @@ env.config();
 
 
 cloudinary.config({ 
-    cloud_name: 'oklabs', 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
     api_key: process.env.CLOUDINARY_API_KEY, 
     api_secret: process.env.CLOUDINARY_API_SECRET 
 });
@@ -33,9 +33,7 @@ const storage = multer.diskStorage({
         //const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
         let random = uuid();
         let filename = random+""+file.originalname;
-        cloudinary.v2.uploader.upload('./uploads/'.filename,function(error, result) {
-            console.log(result, error)
-        });
+       
       cb(null, filename)
     }
   })
@@ -54,11 +52,28 @@ mongoose.connect(`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PA
 //PO.then().catch().finally();
 
 app.post('/fileupload', upload.single('mypic'),(req,res)=>{
+
+    //console.log(req.file);
+
+    cloudinary.uploader.upload(req.file.path,function(error, result) {
+        console.log(result, error);
+        if(error && Object.keys(error).length === 0 && Object.getPrototypeOf(error) === Object.prototype){
+            //Error
+            res.status(400).json({
+                msg:"Error",
+                error:error
+            });
+        }else{
+            //Success
+            res.status(200).json({
+                msg:"FIle uploaded successfully",
+                d:result
+            });
+        }
+       
+        
+    });   
     
-   
-    res.status(200).json({
-        msg:"FIle uploaded successfully"
-    });
 });
 
 
